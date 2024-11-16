@@ -34,7 +34,7 @@ def dimc(
                 except:
                     break
             print()
-            return result
+            return result if len(result) > 1 else result[0]
         return wrapper_f
     return get_f
 
