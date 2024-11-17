@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="dimc",
-    version="0.2.1",
+    version="0.2.2",
     description="A utility for debugging dimensions of tensors and objects.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -10,7 +10,7 @@ setup(
     author_email="ohshane71@gmail.com",
     url="https://github.com/ohshane/dimc",
     packages=find_packages(),
-    install_requires=[],
+    install_requires=["torch"],
     python_requires=">=3.7",
     license="BSD-3-Clause",
     classifiers=[
