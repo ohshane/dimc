@@ -1,47 +1,6 @@
 from typing import Union
 
 
-def dimc(
-    name: Union[bool, str] = True,
-    dim_fn: callable = lambda x: tuple(x.shape)
-) -> callable:
-
-    if callable(name):
-        return dimc(dim_fn=dim_fn)(name)
-
-    def get_f(f):
-        fn_name = name
-        if name == True:
-            fn_name = f.__name__
-        elif name == False:
-            fn_name = ""
-
-        def wrapper_f(*args, **kwargs):
-            print(f"╭─", end=" ")
-            for x in args:
-                try:
-                    print(f"{dim_fn(x)}", end=" ")
-                except:
-                    break
-            print(fn_name)
-
-            result = f(*args, **kwargs)
-            result = result if type(result) is tuple else (result,)
-            print(f"╰→", end=" ")
-            for x in result:
-                try:
-                    print(f"{dim_fn(x)}", end=" ")
-                except:
-                    break
-            print()
-            return result if len(result) > 1 else result[0]
-        return wrapper_f
-    return get_f
-
-
-def odimc(*args, **kwargs) -> callable:
-    return dimc(name=False)(*args, **kwargs)
-
 class DimTrack:
     def __init__(
             self,
@@ -52,34 +11,52 @@ class DimTrack:
         self.dim_fn = dim_fn
         self.f_id  = -1
         self.f_info = {}
-        self.stack  = [] 
+        self.stack  = []
     
-    def __call__(self, f, *args, **kwargs):
-        def f_wrapper(*args, **kwargs):
-            self.f_id += 1
-            f_id = self.f_id
+    def __call__(self, *args, **kwargs):
+        return self.dimtrack(*args, **kwargs)
+    
+    def odimtrack(self, f) -> callable:
+        return self.dimtrack(name=False)(f)
 
-            in_shapes  = []
-            self.stack.append(f_id)
-            # TODO: make forloop compatible for both args and kwargs
-            for x in args:
-                try: in_shapes.append(self.dim_fn(x))
-                except: pass
+    def dimtrack(self, name: Union[bool, str] = True) -> callable:
+        if callable(name):
+            return self.dimtrack()(name)
 
-            out_shapes = []
-            result = f(*args, **kwargs)
-            # TODO: make forloop compatible for both args and kwargs
-            for x in (result if type(result) is tuple else (result,)):
-                try: out_shapes.append(self.dim_fn(x))
-                except: pass
-            
-            self.stack.append(f_id)
-            self.f_info[f_id] = {
-                "in_shapes": in_shapes,
-                "out_shapes": out_shapes,
-            }
-            return result
-        return f_wrapper
+        def get_f(f):
+            f_name = name
+            if name == True:
+                f_name = f.__name__
+            elif name == False:
+                f_name = ""
+
+            def f_wrapper(*args, **kwargs):
+                self.f_id += 1
+                f_id = self.f_id
+
+                in_shapes  = []
+                self.stack.append(f_id)
+                # TODO: make forloop compatible for both args and kwargs
+                for x in args:
+                    try: in_shapes.append(self.dim_fn(x))
+                    except: pass
+
+                out_shapes = []
+                result = f(*args, **kwargs)
+                # TODO: make forloop compatible for both args and kwargs
+                for x in (result if type(result) is tuple else (result,)):
+                    try: out_shapes.append(self.dim_fn(x))
+                    except: pass
+                
+                self.stack.append(f_id)
+                self.f_info[f_id] = {
+                    "f_name": f_name,
+                    "in_shapes": in_shapes,
+                    "out_shapes": out_shapes,
+                }
+                return result
+            return f_wrapper
+        return get_f
     
     def _process(self):
         visited  = []
@@ -94,8 +71,8 @@ class DimTrack:
                 level += 1
                 levels.append(level)
         self.levels = levels
-        
-    def show(self):
+
+    def __repr__(self) -> str:
         self._process()
         max_level = max(self.levels)
         head_decorations = []
@@ -123,9 +100,15 @@ class DimTrack:
                 temp += " ".join(self.f_info[f_id]["out_shapes"])
             else:
                 temp += " ".join(self.f_info[f_id]["in_shapes"])
+                f_name = self.f_info[f_id]["f_name"]
+                if f_name:
+                    temp += f" :: {f_name}"
+
             s.append(temp)
             visited.append(f_id)
         
         s = "\n".join(s)
-        print(s)
-
+        return s
+        
+    def show(self) -> None:
+        print(self.__repr__())
