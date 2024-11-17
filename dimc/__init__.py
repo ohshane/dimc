@@ -1,2 +1,1 @@
-from .dimc import dimc
-from .dimc import odimc
+from .dimc import DimTrack
