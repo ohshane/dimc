@@ -1,4 +1,5 @@
 from typing import Union
+import torch.nn as nn
 
 
 def _dim_fn(x) -> str:
@@ -55,7 +56,10 @@ class DimTrack:
         def get_f(f):
             f_name = name
             if name == True:
-                f_name = f.__name__
+                if isinstance(f, nn.Module):
+                    f_name = str(f.__class__)
+                else:
+                    f_name = f.__name__
             elif name == False:
                 f_name = ""
 
