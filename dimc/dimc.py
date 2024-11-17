@@ -1,11 +1,40 @@
 from typing import Union
 
 
+def _dim_fn(x) -> str:
+    return str(tuple(x.shape))
+
+
+def dimc(f, dim_fn: callable = _dim_fn):
+    def f_wrapper(*args, **kwargs):
+        in_shapes  = []
+        # TODO: make forloop compatible for both args and kwargs
+        for x in args:
+            try: in_shapes.append(dim_fn(x))
+            except: pass
+
+        out_shapes = []
+        result = f(*args, **kwargs)
+        # TODO: make forloop compatible for both args and kwargs
+        for x in (result if type(result) is tuple else (result,)):
+            try: out_shapes.append(dim_fn(x))
+            except: pass
+
+        in_shapes  = " ".join(in_shapes)
+        out_shapes = " ".join(out_shapes)
+
+        print(f"╭─ {in_shapes}")
+        print(f"╰→ {out_shapes}")
+
+        return result
+    return f_wrapper
+
+
 class DimTrack:
     def __init__(
             self,
             indent: int = 0,
-            dim_fn: callable = lambda x: str(tuple(x.shape))
+            dim_fn: callable = _dim_fn
         ):
         self.indent = indent
         self.dim_fn = dim_fn
